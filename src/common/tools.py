@@ -102,20 +102,14 @@ class Tools:
 
                         # Выносим результат в лист
                         chats.append(
-                            {
-                                "id": row.get("id"),
-                                "type": row.get("type"),
-                                "status": "ACTIVE",
-                                "owner": row.get("owner"),
-                                "participants": participants,
-                                "lastMessage": message,
-                                "lastEventTime": messageTime,
-                                "lastDelayedUpdateTime": 0,
-                                "lastFireDelayedErrorTime": 0,
-                                "created": 1,
-                                "joinTime": 1,
-                                "modified": messageTime
-                            }
+                            self.generate_chat(
+                                row.get("id"),
+                                row.get("owner"),
+                                row.get("type"),
+                                participants,
+                                message,
+                                messageTime
+                            )
                         )
 
         # Получаем последнее сообщение из избранного
@@ -123,24 +117,19 @@ class Tools:
             senderId, db_pool
         )
 
+        # ID избранного
+        chatId = senderId ^ senderId
+
         # Хардкодим в лист чатов избранное
         chats.append(
-            {
-                "id": 0,
-                "type": "DIALOG",
-                "status": "ACTIVE",
-                "owner": senderId,
-                "participants": {
-                    str(senderId): 0 # if not messageTime else messageTime
-                },
-                "lastMessage": message,
-                "lastEventTime": messageTime,
-                "lastDelayedUpdateTime": 0,
-                "lastFireDelayedErrorTime": 0,
-                "created": 1,
-                "joinTime": 1,
-                "modified": messageTime
-            }
+            self.generate_chat(
+                chatId,
+                senderId,
+                "DIALOG",
+                [senderId],
+                message,
+                messageTime
+            )
         )
 
         return chats
@@ -185,9 +174,11 @@ class Tools:
                     "time": int(row.get("time")),
                     "type": row.get("type"),
                     "sender": row.get("sender"),
+                    "cid": int(row.get("cid")),
                     "text": row.get("text"),
                     "attaches": json.loads(row.get("attaches")),
-                    # "reactionInfo": {}
+                    "elements": json.loads(row.get("elements")),
+                    "reactionInfo": {}
                 }
 
                 # Возвращаем

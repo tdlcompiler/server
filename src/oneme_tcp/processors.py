@@ -445,7 +445,7 @@ class Processors:
             chatId = userId ^ senderId
 
         # Если клиент хочет отправить сообщение в избранное, 
-        # то выставляем ID чата 0
+        # то выставляем в качестве ID чата ID отправителя
         # (А ещё используем это, если клиент вообще ничего не указал)
         if chatId == 0 or not chatId:
             chatId = senderId
@@ -491,7 +491,8 @@ class Processors:
             "sender": senderId,
             "cid": cid,
             "text": text,
-            "attaches": attaches
+            "attaches": attaches,
+            "elements": elements
         }
 
         # Отправляем событие всем участникам чата
@@ -699,6 +700,9 @@ class Processors:
                         message, messageTime = await self.tools.get_last_message(
                             senderId, self.db_pool
                         )
+
+                        # ID избранного
+                        chatId = senderId ^ senderId
 
                         # Добавляем чат в список
                         chats.append(
