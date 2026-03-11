@@ -47,9 +47,9 @@ class TelegramBot:
             tg_id = str(message.from_user.id)
             
             # Проверка ID на наличие в белом списке
-            if tg_id not in self.whitelist_ids:
-                await self.bot.send_message(message.chat.id, self.get_bot_message(self.msg_types.ID_NOT_WHITELISTED))
-                return
+            # if tg_id not in self.whitelist_ids:
+            #     await self.bot.send_message(message.chat.id, self.get_bot_message(self.msg_types.ID_NOT_WHITELISTED))
+            #     return
             
             async with self.db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
