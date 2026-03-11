@@ -135,9 +135,9 @@ class OnemeConfig:
           2,
           7
         ],
-        "invite-link": "https://t.me/openmax_alerts",
-        "invite-long": "Я пользуюсь OpenMAX. Присоединяйся! https://t.me/openmax_alerts",
-        "invite-short": "Я пользуюсь OpenMAX. Присоединяйся! https://t.me/openmax_alerts",
+        "invite-link": "",
+        "invite-long": "Я пользуюсь TDLMax. Присоединяйся!",
+        "invite-short": "Я пользуюсь TDLMax. Присоединяйся!",
         "join-requests": True,
         "js-download-delegate": False,
         "keep-connection": 2,
