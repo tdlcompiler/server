@@ -103,14 +103,10 @@ class Processors:
                 await cursor.execute("SELECT * FROM users WHERE phone = %s", (phone,))
                 user = await cursor.fetchone()
 
-                if not user:
-                    await self._send_error(seq, self.proto.REQUEST_CODE, self.error_types.USER_NOT_FOUND, writer)
-                    return
-
-                # Сохраняем токен
-                await cursor.execute(
-                    "INSERT INTO auth_tokens (phone, token_hash, code_hash, expires, state) VALUES (%s, %s, %s, %s, %s)",
-                    (phone, token_hash, code_hash, expires, "started",))
+                # Если пользователь существует, сохраняем токен
+                if user:
+                    # Сохраняем токен
+                    await cursor.execute("INSERT INTO auth_tokens (phone, token_hash, code_hash, expires, state) VALUES (%s, %s, %s, %s, %s)", (phone, token_hash, code_hash, expires, "started",))
 
         # Данные пакета
         payload = {
@@ -171,14 +167,7 @@ class Processors:
                 account = await cursor.fetchone()
 
                 # Обновляем состояние токена
-                await cursor.execute("UPDATE auth_tokens set state = %s WHERE token_hash = %s",
-                                     ("verified", hashed_token,))
-
-                # # Создаем сессию
-                # await cursor.execute(
-                #     "INSERT INTO tokens (phone, token_hash, device_type, device_name, location, time) VALUES (%s, %s, %s, %s, %s, %s)",
-                #     (stored_token.get("phone"), hashed_login, deviceType, deviceName, "Epstein Island", int(time.time()),)    
-                # )
+                await cursor.execute("UPDATE auth_tokens set state = %s WHERE token_hash = %s", ("verified", hashed_token,))
 
         # Генерируем профиль
         # Аватарка с биографией
@@ -188,7 +177,7 @@ class Processors:
 
         # Собираем данные пакета
         payload = {
-            "profile": self.tools.generate_profile(
+            "profile": self.tools.generate_profile_tt(
                 id=account.get("id"),
                 phone=int(account.get("phone")),
                 avatarUrl=avatar_url,
@@ -198,12 +187,8 @@ class Processors:
                 lastName=account.get("lastname"),
                 options=json.loads(account.get("options")),
                 description=description,
-                accountStatus=int(account.get("accountstatus")),
-                profileOptions=json.loads(account.get("profileoptions")),
-                includeProfileOptions=False,
-                username=account.get("username"),
-                type="TT"
-            ).get("contact"),
+                username=account.get("username")
+            ),
             "tokenAttrs": {
                 "AUTH": {
                     "token": token
@@ -254,6 +239,7 @@ class Processors:
                     await self._send_error(seq, self.proto.VERIFY_CODE, self.error_types.INVALID_TOKEN, writer)
                     return
 
+                # Если авторизация только началась - отдаем ошибку
                 if stored_token.get("state") == "started":
                     await self._send_error(seq, self.proto.VERIFY_CODE, self.error_types.INVALID_TOKEN, writer)
                     return
@@ -262,7 +248,7 @@ class Processors:
                 await cursor.execute("SELECT * FROM users WHERE phone = %s", (stored_token.get("phone"),))
                 account = await cursor.fetchone()
 
-                # Обновляем состояние токена
+                # Удаляем токен
                 await cursor.execute("DELETE FROM auth_tokens WHERE token_hash = %s", (hashed_token,))
 
                 # Создаем сессию
@@ -279,8 +265,8 @@ class Processors:
 
         # Собираем данные пакета
         payload = {
-            "userToken": "0",
-            "profile": self.tools.generate_profile(
+            "userToken": "0", # Пока как заглушка
+            "profile": self.tools.generate_profile_tt(
                 id=account.get("id"),
                 phone=int(account.get("phone")),
                 avatarUrl=avatar_url,
@@ -290,18 +276,16 @@ class Processors:
                 lastName=account.get("lastname"),
                 options=json.loads(account.get("options")),
                 description=description,
-                accountStatus=int(account.get("accountstatus")),
-                profileOptions=json.loads(account.get("profileoptions")),
-                includeProfileOptions=False,
-                username=account.get("username"),
-                type="TT"
-            ).get("contact"),
+                username=account.get("username")
+            ),
             "tokenType": "LOGIN",
             "token": login
         }
 
+        # Создаем пакет
         packet = self.proto.pack_packet(
             cmd=self.proto.CMD_OK, seq=seq, opcode=self.proto.FINAL_AUTH, payload=payload
         )
 
+        # Отправялем
         await self._send(writer, packet)
